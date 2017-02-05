@@ -40,16 +40,19 @@ type DB struct {
 //    // import _ "github.com/jinzhu/gorm/dialects/sqlite"
 //    // import _ "github.com/jinzhu/gorm/dialects/mssql"
 func Open(dialect string, args ...interface{}) (*DB, error) {
+	// init variable
 	var db DB
 	var err error
+	var source string
+	var dbSQL sqlCommon
 
+	//checking arguments
 	if len(args) == 0 {
 		err = errors.New("invalid database source")
 		return nil, err
 	}
-	var source string
-	var dbSQL sqlCommon
 
+	// get value arguments
 	switch value := args[0].(type) {
 	case string:
 		var driver = dialect
@@ -60,11 +63,13 @@ func Open(dialect string, args ...interface{}) (*DB, error) {
 			source = args[1].(string)
 		}
 		dbSQL, err = sql.Open(driver, source)
+
 	case sqlCommon:
 		source = reflect.Indirect(reflect.ValueOf(value)).FieldByName("dsn").String()
 		dbSQL = value
 	}
 
+	// int db
 	db = DB{
 		dialect:   newDialect(dialect, dbSQL.(*sql.DB)),
 		logger:    defaultLogger,
@@ -73,6 +78,7 @@ func Open(dialect string, args ...interface{}) (*DB, error) {
 		values:    map[string]interface{}{},
 		db:        dbSQL,
 	}
+
 	db.parent = &db
 
 	if err == nil {
